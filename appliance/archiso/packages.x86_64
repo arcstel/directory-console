@@ -21,6 +21,7 @@ less
 
 # directory services + console runtime
 samba
+python-markdown
 python
 python-pip
 zstd

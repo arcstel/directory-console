@@ -85,12 +85,21 @@ Tier 2 builds successfully. A working ISO (`janus-appliance-<date>-x86_64.iso`,
 ~1.6 GB) is produced with `sudo ./build.sh`, with the console virtualenv baked in
 and the `archiso` initramfs hooks present.
 
-Verified while building:
+**Boot-tested in QEMU** (archiso live image, KVM): console answers on `:8000` in
+~30s, the wizard provisions `ACME.LOCAL`, seeds 17 identities, starts Samba, and
+the console reads back users and governance over LDAPS.
+
+Requirements discovered the hard way:
 - `mkinitcpio-archiso` **must** be in `packages.x86_64` — it provides the
   `archiso` initramfs hook. Without it the image builds but cannot find the
   squashfs at boot.
 - Releng's `syslinux/` and `efiboot/` trees plus `mkinitcpio.conf.d/archiso.conf`
   and `mkinitcpio.d/linux.preset` are required in the profile.
+- `python-markdown` is required by Samba's forest-update step; provisioning
+  fails without it.
+- `systemd-firstboot.service` must be masked (and `systemd.firstboot=no` on the
+  kernel cmdline), or the live boot stops at an interactive first-boot prompt.
+- The NetBIOS domain cannot equal the appliance host name (Samba rejects it);
+  the provisioner validates this with a friendly message.
 
-Next: QEMU smoke test, then a Calamares "install to disk" path for a persistent
-appliance.
+Next: a Calamares "install to disk" path for a persistent appliance.

@@ -24,3 +24,6 @@ echo "127.0.0.1 janus localhost" > /etc/hosts
 printf 'nameserver 1.1.1.1\n' > /etc/resolv.conf
 
 echo "[customize] done."
+
+# The appliance configures itself; never show systemd's interactive first-boot wizard.
+systemctl mask systemd-firstboot.service

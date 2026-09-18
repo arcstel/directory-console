@@ -32,6 +32,8 @@ echo "==> Staging console backend into the profile"
 rm -rf "$PROFILE/airootfs/opt/janusos/app"
 mkdir -p "$PROFILE/airootfs/opt/janusos"
 cp -r "$REPO/backend/app" "$PROFILE/airootfs/opt/janusos/app"
+find "$PROFILE/airootfs/opt/janusos/app" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+find "$PROFILE/airootfs/opt/janusos/app" -name '*.pyc' -delete 2>/dev/null || true
 cp "$REPO/backend/requirements.txt" "$PROFILE/airootfs/opt/janusos/requirements.txt"
 chmod +x "$PROFILE/airootfs/usr/local/bin/"* "$PROFILE/airootfs/root/customize_airootfs.sh"
 

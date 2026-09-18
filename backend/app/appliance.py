@@ -11,6 +11,7 @@ import logging
 import os
 import re
 import shutil
+import socket
 import subprocess
 
 from .config import settings
@@ -112,6 +113,13 @@ def provision(domain: str, realm: str, admin_pass: str, seed: bool = True, dns_f
         raise RuntimeError("samba-tool was not found on this appliance.")
 
     domain, realm = _normalize(domain, realm)
+
+    host = re.sub(r"[^A-Za-z0-9]", "", socket.gethostname().split(".")[0])
+    if host and domain.upper() == host.upper():
+        raise RuntimeError(
+            f"The NetBIOS domain must differ from the appliance host name ('{host}'). "
+            "Choose another domain name."
+        )
 
     if os.path.exists("/etc/samba/smb.conf"):
         os.remove("/etc/samba/smb.conf")
