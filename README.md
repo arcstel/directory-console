@@ -1,5 +1,13 @@
 # Directory Control Center (DCC)
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/arcstel/directory-console)
+
+> **Try it with zero setup**
+> - **Simulated demo (instant):** <https://arcstel.github.io/dcc/> — the real UI running fully
+>   client-side against an in-memory directory of fake users. Actions work; state resets on refresh.
+> - **Real lab (Codespaces):** click *Open in GitHub Codespaces* above. It builds the actual
+>   Samba AD DC + console and forwards port 8000. First boot takes a few minutes.
+
 A browser-based Active Directory management console for Linux — an ADAC-style
 experience for the open stack. It talks **LDAP/LDAPS** to a **self-contained
 Samba AD DC** (no Microsoft licensing) and layers identity-governance reporting
