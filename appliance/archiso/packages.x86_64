@@ -2,6 +2,7 @@ base
 linux
 linux-firmware
 mkinitcpio
+mkinitcpio-archiso
 archlinux-keyring
 amd-ucode
 intel-ucode

@@ -81,7 +81,16 @@ and manage over the network.
 
 ## Status
 
-This is the first cut of Tier 2: profile, services, provisioner, seed, and wizard
-are in place and syntax-checked. It has **not** been built into an ISO in this
-environment yet (that needs root + the tools above). Next: build + QEMU smoke
-test, then a Calamares "install to disk" path for a persistent appliance.
+Tier 2 builds successfully. A working ISO (`dcc-appliance-<date>-x86_64.iso`,
+~1.6 GB) is produced with `sudo ./build.sh`, with the console virtualenv baked in
+and the `archiso` initramfs hooks present.
+
+Verified while building:
+- `mkinitcpio-archiso` **must** be in `packages.x86_64` — it provides the
+  `archiso` initramfs hook. Without it the image builds but cannot find the
+  squashfs at boot.
+- Releng's `syslinux/` and `efiboot/` trees plus `mkinitcpio.conf.d/archiso.conf`
+  and `mkinitcpio.d/linux.preset` are required in the profile.
+
+Next: QEMU smoke test, then a Calamares "install to disk" path for a persistent
+appliance.
