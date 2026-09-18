@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Directory Control Center</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230b0f1a'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='%2338bdf8' font-family='monospace' font-weight='bold'%3EDC%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="mark">DC</span><div><b>Directory Control Center</b><small id="subtitle">Active Directory management for Linux</small></div></div>
+  <div class="topmeta">
+    <span class="pill" id="modePill">connecting…</span>
+    <span class="pill mono" id="baseDn">—</span>
+    <button class="btn btn-sm" id="refreshBtn" title="Refresh">↻ Refresh</button>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar">
+    <nav id="nav">
+      <button data-view="dashboard" class="active"><span>▦</span>Dashboard</button>
+      <button data-view="users"><span>👤</span>Users</button>
+      <button data-view="groups"><span>◉</span>Groups</button>
+      <button data-view="ous"><span>▤</span>Organizational Units</button>
+      <button data-view="computers"><span>🖥</span>Computers</button>
+      <button data-view="governance"><span>🛡</span>Governance</button>
+    </nav>
+    <div class="sidefoot mono">Samba AD DC · LDAPS</div>
+  </aside>
+
+  <main class="content">
+    <div class="viewhead">
+      <div>
+        <h1 id="viewTitle">Dashboard</h1>
+        <p id="viewSub" class="muted">Domain overview and identity posture.</p>
+      </div>
+      <div id="viewActions" class="viewactions"></div>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<div class="drawer-wrap" id="drawerWrap" hidden>
+  <div class="drawer-bg" id="drawerBg"></div>
+  <aside class="drawer" id="drawer"></aside>
+</div>
+
+<div class="modal-wrap" id="modalWrap" hidden>
+  <div class="modal-bg" id="modalBg"></div>
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

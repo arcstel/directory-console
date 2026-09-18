@@ -1,0 +1,61 @@
+name: directory-console
+
+services:
+  dc:
+    build: ./samba
+    image: dcc/samba-ad-dc:latest
+    container_name: dcc-dc
+    hostname: dc1
+    environment:
+      DOMAIN: ${DOMAIN:-EXAMPLE}
+      REALM: ${REALM:-EXAMPLE.LOCAL}
+      ADMIN_PASS: ${ADMIN_PASS:-Passw0rd!2026}
+      DNS_FORWARDER: ${DNS_FORWARDER:-1.1.1.1}
+      SEED: ${SEED:-true}
+    volumes:
+      - dc-lib:/var/lib/samba
+      - dc-etc:/etc/samba
+      - dc-log:/var/log/samba
+    networks: [dccnet]
+    # Provisioning sets security.* xattrs on SYSVOL, which requires CAP_SYS_ADMIN.
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'exec 3<>/dev/tcp/127.0.0.1/389' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+      start_period: 20s
+    restart: unless-stopped
+
+  console:
+    build: ./backend
+    image: dcc/console:latest
+    container_name: dcc-console
+    hostname: console
+    environment:
+      LDAP_URI: ${LDAP_URI:-ldaps://dc:636}
+      LDAP_BASE_DN: ${LDAP_BASE_DN:-DC=example,DC=local}
+      LDAP_BIND_USER: ${LDAP_BIND_USER:-Administrator@example.local}
+      LDAP_BIND_PASS: ${LDAP_BIND_PASS:-Passw0rd!2026}
+      LDAP_TLS_VERIFY: ${LDAP_TLS_VERIFY:-false}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-ChangeMe!2026}
+      DCC_MOCK: ${DCC_MOCK:-0}
+    ports:
+      - "${CONSOLE_PORT:-8000}:8000"
+    depends_on:
+      dc:
+        condition: service_healthy
+    networks: [dccnet]
+    restart: unless-stopped
+
+volumes:
+  dc-lib:
+  dc-etc:
+  dc-log:
+
+networks:
+  dccnet:
+    driver: bridge
