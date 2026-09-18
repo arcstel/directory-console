@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from ..appliance import provision as appliance_provision
+from ..appliance import status as appliance_status
 from ..directory import get_directory
 
 router = APIRouter(prefix="/api")
@@ -68,6 +70,14 @@ class DeleteBody(BaseModel):
     dn: str
 
 
+class ProvisionBody(BaseModel):
+    domain: str = "EXAMPLE"
+    realm: str = "EXAMPLE.LOCAL"
+    admin_pass: str
+    seed: bool = True
+    dns_forwarder: str = "1.1.1.1"
+
+
 # -------------------------------------------------------------------- reads
 @router.get("/health")
 def health():
@@ -110,6 +120,17 @@ def object_detail(dn: str):
 @router.get("/governance")
 def governance():
     return _call(_dir().governance)
+
+
+# ----------------------------------------------------- appliance provisioning
+@router.get("/setup/status")
+def setup_status():
+    return appliance_status()
+
+
+@router.post("/setup/provision")
+def setup_provision(body: ProvisionBody):
+    return _call(appliance_provision, body.domain, body.realm, body.admin_pass, body.seed, body.dns_forwarder)
 
 
 # ------------------------------------------------------------------- writes

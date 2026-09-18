@@ -1,0 +1,16 @@
+[Unit]
+Description=Directory Control Center first-run provisioning
+After=network.target
+Before=samba-ad-dc.service
+Wants=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=-/etc/dcc/dcc.env
+ExecStart=/usr/local/bin/dcc-provision
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

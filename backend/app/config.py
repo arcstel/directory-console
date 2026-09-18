@@ -22,6 +22,15 @@ class Settings:
     connect_timeout: int = int(os.getenv("LDAP_CONNECT_TIMEOUT", "8"))
     app_name: str = "Directory Control Center"
 
+    # Appliance mode: enables first-run provisioning from the UI and shell.
+    appliance: bool = _bool("DCC_APPLIANCE", False)
+    samba_private: str = os.getenv("SAMBA_PRIVATE", "/var/lib/samba/private")
+    conf_path: str = os.getenv("DCC_CONF", "/etc/dcc/dcc.conf")
+    env_path: str = os.getenv("DCC_ENV", "/etc/dcc/dcc.env")
+    seed_script: str = os.getenv("DCC_SEED_SCRIPT", "/usr/local/bin/dcc-seed")
+    console_unit: str = os.getenv("DCC_CONSOLE_UNIT", "dcc-console.service")
+    samba_unit: str = os.getenv("DCC_SAMBA_UNIT", "samba-ad-dc.service")
+
     @property
     def scheme(self) -> str:
         return urlparse(self.ldap_uri).scheme or "ldap"

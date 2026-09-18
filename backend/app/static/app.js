@@ -510,6 +510,11 @@
     $("drawerBg").onclick = closeDrawer;
     $("modalBg").onclick = closeModal;
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeDrawer(); closeModal(); } });
+    // On the appliance, divert to the first-run wizard until a domain exists.
+    fetch("/api/setup/status")
+      .then(function (r) { return r.json(); })
+      .then(function (s) { if (s && s.appliance && !s.provisioned) window.location.replace("setup.html"); })
+      .catch(function () {});
     loadMeta();
     setView("dashboard");
   }

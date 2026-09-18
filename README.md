@@ -85,8 +85,10 @@ Default admin bind: `Administrator@example.local` / `Passw0rd!2026`
 - [x] **Tier 1** — web console over a self-contained Samba AD DC (this repo).
 - [ ] **Tier 1.1** — delegation/ACL editor, group nesting view, recycle bin,
       fine-grained password policies, CSV import/export, scheduled reports.
-- [ ] **Tier 2** — `archiso` live appliance bundling `dc` + console + tooling,
-      boot to a working console with an auto-provision wizard.
+- [~] **Tier 2** — `archiso` live appliance (`appliance/`): boots a Samba AD DC +
+      console natively, with a first-run web provisioning wizard and an optional
+      graphical kiosk. Scaffolded and syntax-checked; ISO build + QEMU smoke test
+      and an install-to-disk path are next.
 - [ ] **Tier 3** — installable branded distro (Calamares), update channel, docs.
 
 ## Safety

@@ -1,0 +1,14 @@
+[Unit]
+Description=Samba AD Domain Controller
+After=network.target dcc-provision.service
+Wants=network.target
+Wants=dcc-provision.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/samba --foreground --no-process-group
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

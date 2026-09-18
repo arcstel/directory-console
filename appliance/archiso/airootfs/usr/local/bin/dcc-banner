@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Friendly login banner for the appliance console.
+set -u
+
+CONF=/etc/dcc/dcc.conf
+STATE="not provisioned — open the setup wizard"
+CONF_VALS=""
+if [ -s /var/lib/samba/private/sam.ldb ] || [ -d /var/lib/samba/private/sam.ldb.d ]; then
+  STATE="provisioned"
+fi
+if [ -f "$CONF" ]; then
+  CONF_VALS="$(sed -n 's/^DOMAIN=//p;s/^REALM=//p;s/^ADMIN_PASS=//p' "$CONF" | tr '\n' ' ')"
+fi
+
+IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)"
+[ -n "$IP" ] || IP="<this-host>"
+
+cat <<EOF
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │  Directory Control Center — Appliance                        │
+  └──────────────────────────────────────────────────────────────┘
+
+   Status        : ${STATE}
+   Console       : http://${IP}:8000
+   Setup wizard  : http://${IP}:8000/setup.html
+   Local         : http://localhost:8000
+
+   Config        : ${CONF}
+   Logs          : journalctl -u dcc-console -u samba-ad-dc -f
+
+EOF

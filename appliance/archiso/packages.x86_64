@@ -1,0 +1,36 @@
+base
+linux
+linux-firmware
+mkinitcpio
+archlinux-keyring
+amd-ucode
+intel-ucode
+
+# live environment / networking
+networkmanager
+iproute2
+iputils
+curl
+sudo
+openssh
+procps-ng
+nano
+vi
+less
+
+# directory services + console runtime
+samba
+python
+python-pip
+zstd
+
+# optional graphical kiosk (enable dcc-kiosk.service to use)
+cage
+chromium
+mesa
+
+# boot loaders (archiso)
+syslinux
+edk2-shell
+memtest86+
+efibootmgr

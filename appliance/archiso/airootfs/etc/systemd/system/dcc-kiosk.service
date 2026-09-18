@@ -1,0 +1,16 @@
+[Unit]
+Description=Directory Control Center kiosk (cage + chromium)
+After=dcc-console.service
+Requires=dcc-console.service
+# Enable with: systemctl enable dcc-kiosk.service
+# Disabled by default so the appliance also works headless over the network.
+
+[Service]
+Type=simple
+Environment=XDG_RUNTIME_DIR=/run/user/0
+ExecStart=/usr/bin/cage -- /usr/bin/chromium --kiosk --no-sandbox --disable-gpu --disable-dev-shm-usage http://localhost:8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target

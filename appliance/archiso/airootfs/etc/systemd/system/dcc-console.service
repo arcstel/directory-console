@@ -1,0 +1,15 @@
+[Unit]
+Description=Directory Control Center console
+After=network.target dcc-provision.service
+Wants=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/directory-console
+EnvironmentFile=-/etc/dcc/dcc.env
+ExecStart=/opt/directory-console/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

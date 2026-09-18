@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Directory Control Center · First-run setup</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .setup-wrap { max-width: 640px; margin: 6vh auto 0; padding: 0 20px; }
+  .setup-card { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); padding: 28px; box-shadow: 0 30px 80px -40px rgba(0,0,0,.9); }
+  .setup-card h1 { margin-bottom: 6px; }
+  .steps { display: flex; gap: 8px; margin: 18px 0 6px; font-family: var(--mono); font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; }
+  .steps span { padding: 4px 9px; border: 1px solid var(--border); border-radius: 999px; }
+  .steps span.active { color: var(--accent); border-color: var(--accent); }
+  .form { grid-template-columns: 1fr 1fr; }
+  .note { font-size: 12.5px; color: var(--muted); margin-top: 14px; }
+  .result { margin-top: 18px; padding: 14px; border-radius: 10px; border: 1px solid var(--border); font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; display: none; }
+  .result.ok { border-color: rgba(52,211,153,.5); color: var(--green); }
+  .result.err { border-color: rgba(248,113,113,.5); color: var(--red); }
+  .spin { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.25); border-top-color:#06121c; border-radius:50%; animation: sp .7s linear infinite; vertical-align:-2px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .checks { font-size: 13px; color: var(--muted); margin-top:16px; display:none; }
+  .checks div { margin: 5px 0; }
+  .checks .done { color: var(--green); }
+</style>
+</head>
+<body>
+<div class="setup-wrap">
+  <div class="brand" style="margin-bottom:16px">
+    <span class="mark">DC</span>
+    <div><b>Directory Control Center</b><small>Appliance first-run setup</small></div>
+  </div>
+
+  <div class="setup-card">
+    <div class="steps"><span class="active">1 · Configure</span><span>2 · Provision</span><span>3 · Ready</span></div>
+    <h1>Create your domain</h1>
+    <p class="muted">This appliance will provision a Samba Active Directory domain locally. Choose a NetBIOS name and an internal DNS realm.</p>
+
+    <form id="setupForm" class="form">
+      <div>
+        <label>NetBIOS domain</label>
+        <input id="domain" value="EXAMPLE" autocomplete="off" />
+      </div>
+      <div>
+        <label>DNS realm</label>
+        <input id="realm" value="EXAMPLE.LOCAL" autocomplete="off" />
+      </div>
+      <div>
+        <label>Administrator password</label>
+        <input id="pass" type="password" value="Passw0rd!2026" autocomplete="new-password" />
+      </div>
+      <div>
+        <label>Confirm password</label>
+        <input id="pass2" type="password" value="Passw0rd!2026" autocomplete="new-password" />
+      </div>
+      <div class="full">
+        <label>DNS forwarder</label>
+        <input id="forwarder" value="1.1.1.1" autocomplete="off" />
+      </div>
+      <div class="full" style="display:flex;align-items:center;gap:9px">
+        <input type="checkbox" id="seed" checked style="width:auto" />
+        <label for="seed" style="margin:0">Seed sample users, groups, and OUs</label>
+      </div>
+      <div class="full">
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%">Provision domain</button>
+      </div>
+    </form>
+
+    <div class="checks" id="checks">
+      <div id="c1">◌ Provisioning Samba AD DC…</div>
+      <div id="c2">◌ Installing Kerberos configuration…</div>
+      <div id="c3">◌ Seeding sample directory…</div>
+      <div id="c4">◌ Starting directory service…</div>
+    </div>
+    <div class="result" id="result"></div>
+    <p class="note" id="note">Provisioning writes to local disk. On a live USB without persistence, the domain is rebuilt on each boot.</p>
+  </div>
+</div>
+<script src="setup.js"></script>
+</body>
+</html>

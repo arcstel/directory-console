@@ -1,0 +1,75 @@
+#!/bin/bash
+# Seeds a realistic sample directory into a freshly provisioned Samba AD DC.
+# Usage: dcc-seed EXAMPLE.LOCAL
+set -u
+
+REALM="${1:-EXAMPLE.LOCAL}"
+D1="$(echo "${REALM}" | cut -d. -f1 | tr '[:upper:]' '[:lower:]')"
+D2="$(echo "${REALM}" | cut -d. -f2 | tr '[:upper:]' '[:lower:]')"
+BASE="DC=${D1},DC=${D2}"
+PW='Welcome!2026'
+
+log() { echo "[seed] $*"; }
+
+ou()   { samba-tool ou create "OU=$1,${BASE}" >/dev/null 2>&1 && log "ou $1" || true; }
+grp()  { samba-tool group add "$1" --groupou="OU=Groups" >/dev/null 2>&1 && log "group $1" || true; }
+addm() { samba-tool group addmembers "$1" "$2" >/dev/null 2>&1 || true; }
+
+user() {
+  local sam="$1" first="$2" last="$3" title="$4" dept="$5" ou="$6"
+  local mail="${first,,}.${last,,}@${D1}.${D2}"
+  samba-tool user create "${sam}" "${PW}" \
+    --given-name="${first}" --surname="${last}" \
+    --job-title="${title}" --department="${dept}" \
+    --mail-address="${mail}" --description="${dept}" \
+    --userou="OU=${ou}" >/dev/null 2>&1 \
+    && log "user ${sam}" || true
+}
+
+svc() {
+  local sam="$1" desc="$2"
+  samba-tool user create "${sam}" "${PW}" \
+    --description="${desc}" --userou="OU=ServiceAccounts" >/dev/null 2>&1 \
+    && log "svc ${sam}" || true
+  samba-tool user setexpiry "${sam}" --noexpiry >/dev/null 2>&1 || true
+}
+
+log "Base DN: ${BASE}"
+
+ou "People"; ou "Groups"; ou "ServiceAccounts"; ou "Contractors"; ou "Disabled"
+
+grp "Tier0-Admins"; grp "HelpDesk"; grp "Finance-Team"; grp "Nursing"; grp "Contractors"
+
+user jdoe    John   Doe    "Directory Services Admin" "IT"         "People"
+user mchen   Maya   Chen   "Systems Engineer"         "IT"         "People"
+user rpatel  Ravi   Patel  "Cloud Engineer"           "IT"         "People"
+user asmith  Amy    Smith  "Payroll Specialist"       "Finance"    "People"
+user dkhan   Dara   Khan   "Accounts Payable Clerk"   "Finance"    "People"
+user lnguyen Linh   Nguyen "Registered Nurse"         "Nursing"    "People"
+user obrown  Omar   Brown  "Physician"                "Nursing"    "People"
+user tsmith  Tom    Smith  "Help Desk Technician"     "IT Support" "People"
+user kdavis  Kim    Davis  "Help Desk Technician"     "IT Support" "People"
+user cjones  Chris  Jones  "Platform Consultant"      "External"   "Contractors"
+user mlee    Morgan Lee    "Security Consultant"      "External"   "Contractors"
+
+svc svc-backup  "Backup service account"
+svc svc-monitor "Monitoring service account"
+svc svc-web     "Web application pool"
+
+addm "Tier0-Admins" jdoe
+addm "Tier0-Admins" mchen
+addm "HelpDesk" tsmith
+addm "HelpDesk" kdavis
+addm "Finance-Team" asmith
+addm "Finance-Team" dkhan
+addm "Nursing" lnguyen
+addm "Nursing" obrown
+addm "Contractors" cjones
+addm "Contractors" mlee
+
+for acct in kdavis mlee; do
+  samba-tool user disable "${acct}" >/dev/null 2>&1 || true
+  log "disabled ${acct}"
+done
+
+log "Seed complete."

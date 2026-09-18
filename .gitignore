@@ -3,3 +3,9 @@ __pycache__/
 *.pyc
 .venv/
 .DS_Store
+
+# appliance build artefacts / staged sources
+appliance/out/
+appliance/work/
+appliance/archiso/airootfs/opt/directory-console/app/
+appliance/archiso/airootfs/opt/directory-console/requirements.txt
