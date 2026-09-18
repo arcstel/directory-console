@@ -1,9 +1,13 @@
-# Directory Control Center (DCC)
+# JanusOS · Janus Directory Console
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/arcstel/directory-console)
+A browser-based Active Directory management console for Linux, and the appliance
+that ships it. **JanusOS** is the bootable identity appliance; the **Janus
+Directory Console** is the web UI inside it.
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/arcstel/janusos)
 
 > **Try it with zero setup**
-> - **Simulated demo (instant):** <https://arcstel.github.io/dcc/> — the real UI running fully
+> - **Simulated demo (instant):** <https://arcstel.github.io/janus/> — the real UI running fully
 >   client-side against an in-memory directory of fake users. Actions work; state resets on refresh.
 > - **Real lab (Codespaces):** click *Open in GitHub Codespaces* above. It builds the actual
 >   Samba AD DC + console and forwards port 8000. First boot takes a few minutes.
@@ -14,11 +18,11 @@ Samba AD DC** (no Microsoft licensing) and layers identity-governance reporting
 on top: privileged identities, dormant and disabled accounts, non-expiring
 passwords, and stale access.
 
-> Working title. Rename freely. Not affiliated with Microsoft; "ADAC" is their
-> product and we do not use their binaries.
+> Not affiliated with Microsoft; "ADAC" is their product and we do not use
+> their binaries.
 
-This is **Tier 1** of the roadmap: the console as a Docker app. Tier 2 packages
-it as a bootable Arch-based appliance (see Roadmap).
+Two ways to run it: the Docker stack (**Tier 1**) and the bootable Arch appliance
+(**Tier 2**, in `appliance/`). See the Roadmap for the rest.
 
 ## What works today
 
@@ -39,7 +43,7 @@ it as a bootable Arch-based appliance (see Roadmap).
 │  FastAPI + JS  │   LDAP :389    │  (internal DNS)      │
 │  :8000 → host  │                │  dc1.example.local   │
 └────────────────┘                └──────────────────────┘
-        docker network: dccnet (only 8000 is published)
+        docker network: janusnet (only 8000 is published)
 ```
 
 | Path | Purpose |
@@ -47,7 +51,7 @@ it as a bootable Arch-based appliance (see Roadmap).
 | `docker-compose.yml` | Two services: `dc` (Samba AD DC, auto-provisioned) and `console`. |
 | `samba/` | DC image: `entrypoint.sh` provisions on first boot, `seed.sh` creates sample OUs/groups/users. |
 | `backend/app/ldap_client.py` | LDAP(S) layer: search, CRUD, password set, governance analysis. |
-| `backend/app/mock.py` | In-memory directory for `DCC_MOCK=1` demos with no DC. |
+| `backend/app/mock.py` | In-memory directory for `JANUS_MOCK=1` demos with no DC. |
 | `backend/app/routers/api.py` | REST API. |
 | `backend/app/static/` | The console SPA (no build step). |
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the Directory Control Center appliance ISO.
+# Build the Janus Directory Console appliance ISO.
 #
 #   sudo ./build.sh [output-dir]
 #
@@ -11,7 +11,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(dirname "$HERE")"
 PROFILE="$HERE/archiso"
 OUT="${1:-$HERE/out}"
-WORK="${DCC_WORK:-/tmp/dcc-archiso-work}"
+WORK="${JANUS_WORK:-/tmp/janus-archiso-work}"
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "error: mkarchiso must run as root. Try: sudo $0 $*" >&2
@@ -29,10 +29,10 @@ if [ "${#missing[@]}" -gt 0 ]; then
 fi
 
 echo "==> Staging console backend into the profile"
-rm -rf "$PROFILE/airootfs/opt/directory-console/app"
-mkdir -p "$PROFILE/airootfs/opt/directory-console"
-cp -r "$REPO/backend/app" "$PROFILE/airootfs/opt/directory-console/app"
-cp "$REPO/backend/requirements.txt" "$PROFILE/airootfs/opt/directory-console/requirements.txt"
+rm -rf "$PROFILE/airootfs/opt/janusos/app"
+mkdir -p "$PROFILE/airootfs/opt/janusos"
+cp -r "$REPO/backend/app" "$PROFILE/airootfs/opt/janusos/app"
+cp "$REPO/backend/requirements.txt" "$PROFILE/airootfs/opt/janusos/requirements.txt"
 chmod +x "$PROFILE/airootfs/usr/local/bin/"* "$PROFILE/airootfs/root/customize_airootfs.sh"
 
 echo "==> Building ISO (work=$WORK out=$OUT)"

@@ -1,5 +1,5 @@
 {
-  "name": "Directory Control Center",
+  "name": "Janus Directory Console",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
@@ -12,7 +12,7 @@
   "forwardPorts": [8000],
   "portsAttributes": {
     "8000": {
-      "label": "Directory Control Center",
+      "label": "Janus Directory Console",
       "onAutoForward": "openPreview"
     }
   },

@@ -1,10 +1,10 @@
-name: directory-console
+name: janusos
 
 services:
   dc:
     build: ./samba
-    image: dcc/samba-ad-dc:latest
-    container_name: dcc-dc
+    image: janus/samba-ad-dc:latest
+    container_name: janus-dc
     hostname: dc1
     environment:
       DOMAIN: ${DOMAIN:-EXAMPLE}
@@ -16,7 +16,7 @@ services:
       - dc-lib:/var/lib/samba
       - dc-etc:/etc/samba
       - dc-log:/var/log/samba
-    networks: [dccnet]
+    networks: [janusnet]
     # Provisioning sets security.* xattrs on SYSVOL, which requires CAP_SYS_ADMIN.
     cap_add:
       - SYS_ADMIN
@@ -32,8 +32,8 @@ services:
 
   console:
     build: ./backend
-    image: dcc/console:latest
-    container_name: dcc-console
+    image: janus/console:latest
+    container_name: janus-console
     hostname: console
     environment:
       LDAP_URI: ${LDAP_URI:-ldaps://dc:636}
@@ -42,13 +42,13 @@ services:
       LDAP_BIND_PASS: ${LDAP_BIND_PASS:-Passw0rd!2026}
       LDAP_TLS_VERIFY: ${LDAP_TLS_VERIFY:-false}
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-ChangeMe!2026}
-      DCC_MOCK: ${DCC_MOCK:-0}
+      JANUS_MOCK: ${JANUS_MOCK:-0}
     ports:
       - "${CONSOLE_PORT:-8000}:8000"
     depends_on:
       dc:
         condition: service_healthy
-    networks: [dccnet]
+    networks: [janusnet]
     restart: unless-stopped
 
 volumes:
@@ -57,5 +57,5 @@ volumes:
   dc-log:
 
 networks:
-  dccnet:
+  janusnet:
     driver: bridge

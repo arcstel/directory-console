@@ -1,6 +1,6 @@
 #!/bin/bash
 # Seeds a realistic sample directory into a freshly provisioned Samba AD DC.
-# Usage: dcc-seed EXAMPLE.LOCAL
+# Usage: janus-seed EXAMPLE.LOCAL
 set -u
 
 REALM="${1:-EXAMPLE.LOCAL}"

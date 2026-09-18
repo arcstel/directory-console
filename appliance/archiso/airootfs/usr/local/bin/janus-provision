@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Boot-time provisioning entry point. Honors AUTO_PROVISION in /etc/janus/janus.conf.
+set -euo pipefail
+
+CONF=/etc/janus/janus.conf
+INSTALL_DIR=/opt/janusos
+
+if [ ! -f "$CONF" ]; then
+  echo "[janus-provision] no $CONF; nothing to do"
+  exit 0
+fi
+
+AUTO="$(sed -n 's/^AUTO_PROVISION=//p' "$CONF" | head -1 | tr -d ' \"')"
+case "${AUTO,,}" in
+  true) : ;;
+  *)
+    echo "[janus-provision] AUTO_PROVISION is disabled; open the setup wizard at http://<this-host>:8000"
+    exit 0
+    ;;
+esac
+
+cd "$INSTALL_DIR"
+exec ./venv/bin/python -m app.provision_cli

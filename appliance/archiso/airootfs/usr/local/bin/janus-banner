@@ -2,7 +2,7 @@
 # Friendly login banner for the appliance console.
 set -u
 
-CONF=/etc/dcc/dcc.conf
+CONF=/etc/janus/janus.conf
 STATE="not provisioned — open the setup wizard"
 CONF_VALS=""
 if [ -s /var/lib/samba/private/sam.ldb ] || [ -d /var/lib/samba/private/sam.ldb.d ]; then
@@ -18,7 +18,7 @@ IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src
 cat <<EOF
 
   ┌──────────────────────────────────────────────────────────────┐
-  │  Directory Control Center — Appliance                        │
+  │  Janus Directory Console — Appliance                        │
   └──────────────────────────────────────────────────────────────┘
 
    Status        : ${STATE}
@@ -27,6 +27,6 @@ cat <<EOF
    Local         : http://localhost:8000
 
    Config        : ${CONF}
-   Logs          : journalctl -u dcc-console -u samba-ad-dc -f
+   Logs          : journalctl -u janus-console -u samba-ad-dc -f
 
 EOF

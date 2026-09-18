@@ -1,8 +1,8 @@
 [Unit]
 Description=Samba AD Domain Controller
-After=network.target dcc-provision.service
+After=network.target janus-provision.service
 Wants=network.target
-Wants=dcc-provision.service
+Wants=janus-provision.service
 
 [Service]
 Type=simple

@@ -1,6 +1,6 @@
 """Boot-time auto-provisioning entry point for the appliance.
 
-Invoked by dcc-provision.service. Reads /etc/dcc/dcc.conf and, when
+Invoked by janus-provision.service. Reads /etc/janus/janus.conf and, when
 AUTO_PROVISION=true and no domain exists yet, provisions the Samba AD DC.
 """
 from __future__ import annotations
@@ -32,12 +32,12 @@ def main() -> int:
     from .appliance import is_provisioned, provision
 
     if is_provisioned():
-        print("[dcc-provision] domain already provisioned; nothing to do")
+        print("[janus-provision] domain already provisioned; nothing to do")
         return 0
 
     conf = parse_conf(settings.conf_path)
     if conf.get("AUTO_PROVISION", "false").lower() != "true":
-        print("[dcc-provision] AUTO_PROVISION disabled; awaiting the setup wizard")
+        print("[janus-provision] AUTO_PROVISION disabled; awaiting the setup wizard")
         return 0
 
     try:
@@ -49,10 +49,10 @@ def main() -> int:
             conf.get("DNS_FORWARDER", "1.1.1.1"),
         )
     except Exception as exc:  # surfaced in the journal
-        print(f"[dcc-provision] ERROR: {exc}", file=sys.stderr)
+        print(f"[janus-provision] ERROR: {exc}", file=sys.stderr)
         return 1
 
-    print(f"[dcc-provision] provisioned {result['domain']} ({result['realm']}) base={result['base_dn']}")
+    print(f"[janus-provision] provisioned {result['domain']} ({result['realm']}) base={result['base_dn']}")
     return 0
 
 

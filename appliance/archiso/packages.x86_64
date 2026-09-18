@@ -25,7 +25,7 @@ python
 python-pip
 zstd
 
-# optional graphical kiosk (enable dcc-kiosk.service to use)
+# optional graphical kiosk (enable janus-kiosk.service to use)
 cage
 chromium
 mesa

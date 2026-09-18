@@ -11,7 +11,7 @@ docker compose up -d --build
 echo "==> Waiting for the console to become healthy…"
 for i in $(seq 1 90); do
   if curl -sf http://localhost:8000/api/health >/dev/null 2>&1; then
-    echo "==> Directory Control Center is up at http://localhost:8000"
+    echo "==> Janus Directory Console is up at http://localhost:8000"
     curl -s http://localhost:8000/api/health || true
     echo
     exit 0

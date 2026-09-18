@@ -1,8 +1,8 @@
 [Unit]
-Description=Directory Control Center kiosk (cage + chromium)
-After=dcc-console.service
-Requires=dcc-console.service
-# Enable with: systemctl enable dcc-kiosk.service
+Description=Janus Directory Console kiosk (cage + chromium)
+After=janus-console.service
+Requires=janus-console.service
+# Enable with: systemctl enable janus-kiosk.service
 # Disabled by default so the appliance also works headless over the network.
 
 [Service]

@@ -15,7 +15,7 @@ import subprocess
 
 from .config import settings
 
-log = logging.getLogger("dcc.appliance")
+log = logging.getLogger("janus.appliance")
 
 
 def realm_to_base_dn(realm: str) -> str:
@@ -33,8 +33,8 @@ def status() -> dict:
         "appliance": settings.appliance,
         "provisioned": is_provisioned(),
         "samba": shutil.which("samba-tool") is not None,
-        "domain": os.getenv("DCC_DOMAIN", "EXAMPLE"),
-        "realm": os.getenv("DCC_REALM", "EXAMPLE.LOCAL"),
+        "domain": os.getenv("JANUS_DOMAIN", "EXAMPLE"),
+        "realm": os.getenv("JANUS_REALM", "EXAMPLE.LOCAL"),
     }
 
 
@@ -57,7 +57,7 @@ def _write_config(domain: str, realm: str, admin_pass: str, seed: bool, forwarde
     os.makedirs(os.path.dirname(settings.conf_path), exist_ok=True)
     with open(settings.conf_path, "w", encoding="utf-8") as fh:
         fh.write(
-            "# Directory Control Center appliance configuration\n"
+            "# Janus Directory Console appliance configuration\n"
             f"DOMAIN={domain}\n"
             f"REALM={realm}\n"
             f"ADMIN_PASS={admin_pass}\n"
@@ -68,7 +68,7 @@ def _write_config(domain: str, realm: str, admin_pass: str, seed: bool, forwarde
     base_dn = realm_to_base_dn(realm)
     with open(settings.env_path, "w", encoding="utf-8") as fh:
         fh.write(
-            "DCC_APPLIANCE=1\n"
+            "JANUS_APPLIANCE=1\n"
             "LDAP_URI=ldaps://127.0.0.1:636\n"
             f"LDAP_BASE_DN={base_dn}\n"
             f"LDAP_BIND_USER=Administrator@{realm.lower()}\n"

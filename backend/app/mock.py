@@ -1,4 +1,4 @@
-"""In-memory directory used when DCC_MOCK=1.
+"""In-memory directory used when JANUS_MOCK=1.
 
 Lets the console run and be demoed without a live Samba AD DC. Mirrors the
 LdapDirectory interface so the API and UI behave identically.

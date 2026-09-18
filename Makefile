@@ -3,7 +3,7 @@ COMPOSE := docker compose
 
 .PHONY: help up down logs ps reset mock shell-console shell-dc
 help:
-	@echo "Directory Control Center"
+	@echo "Janus Directory Console"
 	@echo "  make up             build and start the Samba AD DC + console"
 	@echo "  make down           stop and remove containers"
 	@echo "  make logs           tail logs"
@@ -30,7 +30,7 @@ reset:
 	$(COMPOSE) up -d --build
 
 mock:
-	DCC_MOCK=1 $(COMPOSE) up -d --build console
+	JANUS_MOCK=1 $(COMPOSE) up -d --build console
 	@echo "Console (mock mode): http://localhost:$${CONSOLE_PORT:-8000}"
 
 shell-console:

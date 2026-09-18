@@ -18,18 +18,18 @@ class Settings:
     bind_pass: str = os.getenv("LDAP_BIND_PASS", "Passw0rd!2026")
     tls_verify: bool = _bool("LDAP_TLS_VERIFY", False)
     default_user_password: str = os.getenv("DEFAULT_USER_PASSWORD", "ChangeMe!2026")
-    mock: bool = _bool("DCC_MOCK", False)
+    mock: bool = _bool("JANUS_MOCK", False)
     connect_timeout: int = int(os.getenv("LDAP_CONNECT_TIMEOUT", "8"))
-    app_name: str = "Directory Control Center"
+    app_name: str = "Janus Directory Console"
 
     # Appliance mode: enables first-run provisioning from the UI and shell.
-    appliance: bool = _bool("DCC_APPLIANCE", False)
+    appliance: bool = _bool("JANUS_APPLIANCE", False)
     samba_private: str = os.getenv("SAMBA_PRIVATE", "/var/lib/samba/private")
-    conf_path: str = os.getenv("DCC_CONF", "/etc/dcc/dcc.conf")
-    env_path: str = os.getenv("DCC_ENV", "/etc/dcc/dcc.env")
-    seed_script: str = os.getenv("DCC_SEED_SCRIPT", "/usr/local/bin/dcc-seed")
-    console_unit: str = os.getenv("DCC_CONSOLE_UNIT", "dcc-console.service")
-    samba_unit: str = os.getenv("DCC_SAMBA_UNIT", "samba-ad-dc.service")
+    conf_path: str = os.getenv("JANUS_CONF", "/etc/janus/janus.conf")
+    env_path: str = os.getenv("JANUS_ENV", "/etc/janus/janus.env")
+    seed_script: str = os.getenv("JANUS_SEED_SCRIPT", "/usr/local/bin/janus-seed")
+    console_unit: str = os.getenv("JANUS_CONSOLE_UNIT", "janus-console.service")
+    samba_unit: str = os.getenv("JANUS_SAMBA_UNIT", "samba-ad-dc.service")
 
     @property
     def scheme(self) -> str:

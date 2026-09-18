@@ -1,7 +1,7 @@
-# Directory Control Center — Appliance (Tier 2)
+# JanusOS — Appliance (Tier 2)
 
 A bootable Arch Linux ISO that comes up as a self-contained identity appliance:
-a **Samba AD DC** plus the **Directory Control Center** console, with a first-run
+a **Samba AD DC** plus the **Janus Directory Console**, with a first-run
 **provisioning wizard**. Boot the ISO, open `http://<appliance>:8000`, create your
 domain, and start managing it — no Docker, no cloud.
 
@@ -10,15 +10,15 @@ domain, and start managing it — no Docker, no cloud.
 ```
  power on
    → getty@tty1 (autologin) prints the appliance banner with URLs
-   → dcc-provision.service   (AUTO_PROVISION, or waits for the wizard)
+   → janus-provision.service   (AUTO_PROVISION, or waits for the wizard)
    → samba-ad-dc.service     (Samba AD DC, internal DNS)
-   → dcc-console.service     (uvicorn → http://<host>:8000)
-   → [optional] dcc-kiosk.service (cage + chromium fullscreen)
+   → janus-console.service     (uvicorn → http://<host>:8000)
+   → [optional] janus-kiosk.service (cage + chromium fullscreen)
 ```
 
 First boot with the shipped config (`AUTO_PROVISION=false`) lands on the **setup
 wizard** at `http://<host>:8000/setup.html`. Prefer zero-touch? Set
-`AUTO_PROVISION=true` in `/etc/dcc/dcc.conf` (or edit the profile before building)
+`AUTO_PROVISION=true` in `/etc/janus/janus.conf` (or edit the profile before building)
 and the domain is created automatically at boot.
 
 ## Layout
@@ -30,8 +30,8 @@ and the domain is created automatically at boot.
 | `archiso/profiledef.sh` | ISO metadata, boot modes (BIOS + UEFI), squashfs settings. |
 | `archiso/packages.x86_64` | Packages baked into the image (samba, python, kiosk, boot). |
 | `archiso/airootfs/` | Files overlaid into the live system. |
-| `archiso/airootfs/etc/dcc/` | `dcc.conf` (provisioning inputs) and `dcc.env` (console env). |
-| `archiso/airootfs/usr/local/bin/` | `dcc-provision`, `dcc-seed`, `dcc-banner`. |
+| `archiso/airootfs/etc/janus/` | `janus.conf` (provisioning inputs) and `janus.env` (console env). |
+| `archiso/airootfs/usr/local/bin/` | `janus-provision`, `janus-seed`, `janus-banner`. |
 | `archiso/airootfs/root/customize_airootfs.sh` | Build-chroot hook: venv + enable services. |
 
 ## Build
@@ -48,7 +48,7 @@ image, so the build needs network access to PyPI.
 ## Run in QEMU
 
 ```bash
-./test-qemu.sh out/dcc-appliance-*.iso
+./test-qemu.sh out/janus-appliance-*.iso
 # then open http://localhost:8000
 ```
 
@@ -58,7 +58,7 @@ image, so the build needs network access to PyPI.
 
 ## Configure before building
 
-Edit `archiso/airootfs/etc/dcc/dcc.conf`:
+Edit `archiso/airootfs/etc/janus/janus.conf`:
 
 ```ini
 DOMAIN=EXAMPLE
@@ -72,7 +72,7 @@ AUTO_PROVISION=false   # true = hands-off boot; false = web wizard
 ## Enable the graphical kiosk (optional)
 
 ```bash
-systemctl enable dcc-kiosk.service
+systemctl enable janus-kiosk.service
 systemctl set-default graphical.target
 ```
 
@@ -81,7 +81,7 @@ and manage over the network.
 
 ## Status
 
-Tier 2 builds successfully. A working ISO (`dcc-appliance-<date>-x86_64.iso`,
+Tier 2 builds successfully. A working ISO (`janus-appliance-<date>-x86_64.iso`,
 ~1.6 GB) is produced with `sudo ./build.sh`, with the console virtualenv baked in
 and the `archiso` initramfs hooks present.
 

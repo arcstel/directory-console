@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Boot a built appliance ISO in QEMU and forward the console to the host.
 #
-#   ./test-qemu.sh out/dcc-appliance-*.iso
+#   ./test-qemu.sh out/janus-appliance-*.iso
 #
 # Then open http://localhost:8000 on the host. Requires qemu (qemu-full).
 set -euo pipefail
 
 ISO="${1:-}"
 if [ -z "$ISO" ] || [ ! -f "$ISO" ]; then
-  echo "usage: $0 /path/to/dcc-appliance.iso" >&2
+  echo "usage: $0 /path/to/janus-appliance.iso" >&2
   exit 1
 fi
 

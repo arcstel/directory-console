@@ -4,4 +4,4 @@
 
 [[ -f ~/.bashrc ]] && . ~/.bashrc
 
-/usr/local/bin/dcc-banner
+/usr/local/bin/janus-banner
