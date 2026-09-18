@@ -56,6 +56,32 @@ image, so the build needs network access to PyPI.
 > RAM and is rebuilt on each boot. For a persistent appliance, install the ISO to
 > disk (or add an `archiso` persistence partition) so `/var/lib/samba` survives.
 
+## Install to a disk (persistence)
+
+A live boot is ephemeral — the domain lives in RAM. To make JanusOS persistent,
+boot the ISO and run the installer:
+
+```bash
+janus-install                          # pick a disk interactively
+janus-install --target /dev/sda --yes  # scripted, destructive
+```
+
+It partitions the target (GPT: ESP + root on UEFI, BIOS-boot + root on BIOS),
+unpacks the live system, writes `/etc/fstab`, regenerates the initramfs (dropping
+the archiso hooks), installs GRUB, and powers off. Reboot into a persistent
+JanusOS; the domain you provision survives reboots.
+
+Unattended install (boot the ISO with these kernel arguments):
+
+```
+janus.install=/dev/vda janus.install.yes=1 janus.install.poweroff=1
+```
+
+Boot-tested in QEMU: install to disk → provision `ACME.LOCAL` → clean shutdown →
+reboot, and the domain plus its 17 seeded identities persist with the console
+reconnecting over LDAPS. (Note: shut the VM down cleanly before testing — Samba's
+`sam.ldb` is a database, and a hard reset right after provisioning can lose it.)
+
 ## Configure before building
 
 Edit `archiso/airootfs/etc/janus/janus.conf`:
@@ -96,7 +122,7 @@ Requirements discovered the hard way:
 - Releng's `syslinux/` and `efiboot/` trees plus `mkinitcpio.conf.d/archiso.conf`
   and `mkinitcpio.d/linux.preset` are required in the profile.
 - `python-markdown` is required by Samba's forest-update step; provisioning
-  fails without it.
+  fails without it. `python-dnspython` is needed by `samba_dnsupdate`.
 - `systemd-firstboot.service` must be masked (and `systemd.firstboot=no` on the
   kernel cmdline), or the live boot stops at an interactive first-boot prompt.
 - The NetBIOS domain cannot equal the appliance host name (Samba rejects it);

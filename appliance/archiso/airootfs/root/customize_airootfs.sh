@@ -12,6 +12,7 @@ systemctl enable NetworkManager.service
 systemctl enable janus-provision.service
 systemctl enable samba-ad-dc.service
 systemctl enable janus-console.service
+systemctl enable janus-install.service
 systemctl enable getty@tty1.service
 # Kiosk is installed but off by default (works headless too):
 #   systemctl enable janus-kiosk.service && systemctl set-default graphical.target

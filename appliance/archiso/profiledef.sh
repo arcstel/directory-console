@@ -21,5 +21,6 @@ file_permissions=(
   ["/usr/local/bin/janus-provision"]="0:0:755"
   ["/usr/local/bin/janus-seed"]="0:0:755"
   ["/usr/local/bin/janus-banner"]="0:0:755"
+  ["/usr/local/bin/janus-install"]="0:0:755"
   ["/root/customize_airootfs.sh"]="0:0:755"
 )

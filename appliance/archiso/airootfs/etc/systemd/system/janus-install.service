@@ -1,0 +1,14 @@
+[Unit]
+Description=JanusOS unattended disk install
+ConditionKernelCommandLine=janus.install
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/janus-install --unattended
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

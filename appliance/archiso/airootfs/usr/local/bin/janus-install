@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+# Install JanusOS from the live medium to a disk, making it persistent.
+#
+#   janus-install                                   # interactive: pick a disk
+#   janus-install --target /dev/vda --yes           # scripted, destructive
+#   janus-install --target /dev/vda --yes --poweroff
+#
+# Unattended (boot the ISO with):
+#   ... janus.install=/dev/vda janus.install.yes=1 janus.install.poweroff=1
+#
+# This DESTROYS everything on the target disk.
+set -euo pipefail
+
+TARGET=""
+ASSUME_YES=0
+POWEROFF=0
+NEW_HOSTNAME="janus"
+TIMEZONE="UTC"
+MOUNT=/mnt
+
+log()  { echo -e "\033[1;36m[janus-install]\033[0m $*"; }
+warn() { echo -e "\033[1;33m[janus-install]\033[0m $*"; }
+die()  { echo -e "\033[1;31m[janus-install] ERROR:\033[0m $*" >&2; exit 1; }
+
+# ---- kernel command line (unattended) --------------------------------------
+for p in $(cat /proc/cmdline); do
+  case "$p" in
+    janus.install=*)          TARGET="${p#*=}" ;;
+    janus.install.yes=*)      ASSUME_YES=1 ;;
+    janus.install.poweroff=*) POWEROFF=1 ;;
+    janus.hostname=*)         NEW_HOSTNAME="${p#*=}" ;;
+    janus.timezone=*)         TIMEZONE="${p#*=}" ;;
+  esac
+done
+
+# ---- args ------------------------------------------------------------------
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --target)   TARGET="$2"; shift 2 ;;
+    --yes|-y)   ASSUME_YES=1; shift ;;
+    --poweroff) POWEROFF=1; shift ;;
+    --hostname) NEW_HOSTNAME="$2"; shift 2 ;;
+    --timezone) TIMEZONE="$2"; shift 2 ;;
+    --unattended) ASSUME_YES=1; shift ;;
+    -h|--help)  sed -n '2,16p' "$0"; exit 0 ;;
+    *) die "unknown argument: $1" ;;
+  esac
+done
+
+[ "$(id -u)" -eq 0 ] || die "must run as root"
+
+# ---- pick a target ---------------------------------------------------------
+if [ -z "$TARGET" ]; then
+  echo
+  lsblk -dpno NAME,SIZE,MODEL | sed 's/^/  /'
+  echo
+  read -rp "Target disk to ERASE and install to (e.g. /dev/sda): " TARGET
+  [ -n "$TARGET" ] || die "no target given"
+fi
+[ -b "$TARGET" ] || die "$TARGET is not a block device"
+
+echo
+warn "This will ERASE ALL DATA on $TARGET and install JanusOS."
+if [ "$ASSUME_YES" -ne 1 ]; then
+  read -rp "Type YES to continue: " ans
+  [ "$ans" = "YES" ] || die "aborted"
+fi
+
+# ---- helpers ---------------------------------------------------------------
+part() {  # part <disk> <n>
+  local d="$1" n="$2"
+  if [[ "$d" =~ [0-9]$ ]]; then echo "${d}p${n}"; else echo "${d}${n}"; fi
+}
+BOOTMNT=""
+for c in /run/archiso/bootmnt; do [ -d "$c" ] && BOOTMNT="$c"; done
+
+# Locate the live root image.
+SFS=""
+for c in "$BOOTMNT"/arch/x86_64/airootfs.sfs "$BOOTMNT"/arch/x86_64/airootfs.erofs; do
+  [ -f "$c" ] && SFS="$c"
+done
+[ -n "$SFS" ] || die "cannot find the live root image under $BOOTMNT/arch/x86_64"
+
+UEFI=0
+[ -d /sys/firmware/efi ] && UEFI=1
+
+log "Target: $TARGET · firmware: $([ "$UEFI" -eq 1 ] && echo UEFI || echo BIOS) · source: $SFS"
+
+# ---- partition / format / mount -------------------------------------------
+log "Partitioning $TARGET (GPT)"
+sgdisk --zap-all "$TARGET" >/dev/null
+if [ "$UEFI" -eq 1 ]; then
+  sgdisk -n1:0:+512M -t1:ef00 -c1:"ESP" -n2:0:0 -t2:8300 -c2:"JanusOS" "$TARGET" >/dev/null
+else
+  sgdisk -n1:0:+1M -t1:ef02 -c1:"BIOS boot" -n2:0:0 -t2:8300 -c2:"JanusOS" "$TARGET" >/dev/null
+fi
+partprobe "$TARGET" || true
+sleep 2
+
+ROOT_PART="$(part "$TARGET" 2)"
+ESP_PART=""
+log "Formatting $(part "$TARGET" 2) as ext4"
+mkfs.ext4 -F -L JanusOS "$ROOT_PART" >/dev/null
+
+mount "$ROOT_PART" "$MOUNT"
+
+# ---- install the system ----------------------------------------------------
+log "Unpacking the live system (this takes a minute)"
+if [[ "$SFS" == *.erofs ]]; then
+  fsck.erofs --extract="$MOUNT" "$SFS" >/dev/null
+else
+  unsquashfs -f -d "$MOUNT" "$SFS" >/dev/null
+fi
+
+# Format/mount the ESP only after unpacking so it can't be clobbered.
+if [ "$UEFI" -eq 1 ]; then
+  ESP_PART="$(part "$TARGET" 1)"
+  mkfs.fat -F32 -n ESP "$ESP_PART" >/dev/null
+  mkdir -p "$MOUNT/boot"
+  mount "$ESP_PART" "$MOUNT/boot"
+fi
+
+mkdir -p "$MOUNT/boot"
+cp "$BOOTMNT/arch/boot/x86_64/vmlinuz-linux" "$MOUNT/boot/vmlinuz-linux"
+
+# ---- fstab -----------------------------------------------------------------
+log "Writing fstab"
+ROOT_UUID="$(blkid -s UUID -o value "$ROOT_PART")"
+{
+  echo "# /etc/fstab: JanusOS"
+  echo "UUID=$ROOT_UUID  /      ext4  rw,relatime  0 1"
+  if [ "$UEFI" -eq 1 ]; then
+    echo "UUID=$(blkid -s UUID -o value "$ESP_PART")  /boot  vfat  rw,relatime,fmask=0022,dmask=0022  0 2"
+  fi
+} > "$MOUNT/etc/fstab"
+
+# ---- configure the installed system ---------------------------------------
+log "Configuring the installed system"
+rm -f "$MOUNT/etc/mkinitcpio.conf.d/archiso.conf"
+cat > "$MOUNT/etc/mkinitcpio.d/linux.preset" <<'PRESET'
+ALL_config="/etc/mkinitcpio.conf"
+ALL_kver="/boot/vmlinuz-linux"
+PRESETS=('default' 'fallback')
+default_image="/boot/initramfs-linux.img"
+fallback_image="/boot/initramfs-linux-fallback.img"
+fallback_options="-S autodetect"
+PRESET
+
+echo "$NEW_HOSTNAME" > "$MOUNT/etc/hostname"
+cat > "$MOUNT/etc/hosts" <<HOSTS
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   ${NEW_HOSTNAME}.localdomain ${NEW_HOSTNAME}
+HOSTS
+: > "$MOUNT/etc/machine-id"
+ln -sf "/usr/share/zoneinfo/${TIMEZONE}" "$MOUNT/etc/localtime"
+sed -i 's/^#\(en_US\.UTF-8 UTF-8\)/\1/' "$MOUNT/etc/locale.gen" 2>/dev/null || true
+
+for d in dev proc sys run; do mount --rbind "/$d" "$MOUNT/$d"; done
+cp -f /etc/resolv.conf "$MOUNT/etc/resolv.conf" 2>/dev/null || true
+
+log "Generating initramfs and locales in the target"
+chroot "$MOUNT" bash -lc "mkinitcpio -P && locale-gen" >/dev/null
+
+# ---- bootloader ------------------------------------------------------------
+log "Installing the bootloader (GRUB)"
+if [ "$UEFI" -eq 1 ]; then
+  chroot "$MOUNT" grub-install --target=x86_64-efi --efi-directory=/boot \
+    --bootloader-id=JanusOS --recheck >/dev/null
+else
+  chroot "$MOUNT" grub-install --target=i386-pc --recheck "$TARGET" >/dev/null
+fi
+chroot "$MOUNT" grub-mkconfig -o /boot/grub/grub.cfg >/dev/null
+
+# ---- cleanup ---------------------------------------------------------------
+log "Sync and unmount"
+sync
+for d in dev proc sys run; do umount -R "$MOUNT/$d" 2>/dev/null || true; done
+[ "$UEFI" -eq 1 ] && umount -R "$MOUNT/boot" 2>/dev/null || true
+umount -R "$MOUNT" 2>/dev/null || true
+
+cat <<EOF
+
+  ┌────────────────────────────────────────────────────────────┐
+  │  JanusOS installed to $TARGET
+  │  Reboot, remove the install medium, and open :8000 to run
+  │  the setup wizard.
+  └────────────────────────────────────────────────────────────┘
+
+EOF
+
+if [ "$POWEROFF" -eq 1 ]; then
+  log "Powering off"
+  systemctl poweroff
+fi
