@@ -6,6 +6,7 @@ ldaps:// and the connection is reused for read-modify sequences.
 """
 from __future__ import annotations
 
+import re
 import ssl
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -49,6 +50,12 @@ class DirectoryError(RuntimeError):
 def encode_password(password: str) -> bytes:
     """AD/Samba expect unicodePwd as the quoted password in UTF-16LE."""
     return ('"%s"' % password).encode("utf-16-le")
+
+
+def _first(value: Any) -> Any:
+    if isinstance(value, (list, tuple)):
+        return value[0] if value else None
+    return value
 
 
 def realm_from_base(base: str) -> str:
@@ -429,6 +436,105 @@ class LdapDirectory:
             if not conn.modify_dn(dn, rdn, new_superior=target_dn):
                 raise DirectoryError(f"Move failed: {conn.result}")
         return {"moved": dn, "to": target_dn}
+
+    # ------------------------------------------------------------- recycle bin
+    def recycle_bin(self) -> dict:
+        base = f"CN=Deleted Objects,{settings.base_dn}"
+        attrs = ["cn", "distinguishedName", "whenChanged", "lastKnownParent",
+                 "objectClass", "sAMAccountName", "isRecycled"]
+        with self.connection() as conn:
+            # LDAP_SERVER_SHOW_DELETED_OID
+            conn.search(base, "(isDeleted=TRUE)", search_scope=SUBTREE, attributes=attrs,
+                        controls=[("1.2.840.113556.1.4.417", True, None)])
+            items = []
+            for e in conn.response:
+                if not isinstance(e, dict) or e.get("type") != "searchResEntry":
+                    continue
+                if e.get("dn", "").lower() == base.lower():
+                    continue  # the Deleted Objects container itself
+                a = e.get("attributes", {})
+                raw_name = str(_first(a.get("cn")) or _first(a.get("sAMAccountName")) or "")
+                clean_name = re.sub(r"[\x00-\x1f].*$", "", raw_name).split("DEL:")[0].strip()
+                items.append({
+                    "dn": e.get("dn", ""),
+                    "name": clean_name or raw_name,
+                    "sam": _first(a.get("sAMAccountName")),
+                    "whenChanged": _first(a.get("whenChanged")),
+                    "lastKnownParent": _first(a.get("lastKnownParent")),
+                    "recycled": str(_first(a.get("isRecycled"))).lower() in ("true", "1"),
+                })
+        items.sort(key=lambda i: str(i.get("whenChanged") or ""), reverse=True)
+        return {"total": len(items), "items": items}
+
+    def restore_object(self, dn: str) -> dict:
+        with self.connection() as conn:
+            conn.search(dn, "(objectClass=*)", search_scope="BASE",
+                        attributes=["cn", "sAMAccountName", "lastKnownParent", "objectClass", "isRecycled"],
+                        controls=[("1.2.840.113556.1.4.417", True, None)])
+            if not conn.response:
+                raise DirectoryError("Deleted object not found")
+            a = conn.response[0].get("attributes", {})
+            last_parent = _first(a.get("lastKnownParent")) or settings.base_dn
+            raw_name = str(_first(a.get("cn")) or _first(a.get("sAMAccountName")) or "")
+            name = re.sub(r"[\x00-\x1f].*$", "", raw_name).split("DEL:")[0].strip()
+            if not name:
+                raise DirectoryError("Cannot determine the object's original name")
+            rdn = f"CN={name}"
+            new_dn = f"{rdn},{last_parent}"
+            # Reanimation usually means clearing isDeleted, then moving the object
+            # back to its original parent (which drops the \0ADEL RDN suffix).
+            try:
+                conn.modify(dn, {"isDeleted": [(MODIFY_DELETE, [])]})
+            except Exception:
+                pass
+            try:
+                moved = conn.modify_dn(dn, rdn, new_superior=last_parent)
+            except Exception:
+                moved = False
+            if moved:
+                return {"restored": dn, "to": new_dn}
+            raise DirectoryError(
+                "This directory does not support restoring deleted objects over LDAP "
+                "(a Samba AD DC limitation; Microsoft AD with the Recycle Bin enabled does). "
+                "The object remains in the recycle bin."
+            )
+        return {"restored": dn, "to": new_dn}
+
+    # --------------------------------------------------------------------- ACL
+    def _sid_map(self, conn: Connection) -> dict:
+        mapping: dict[str, str] = {}
+        conn.search(settings.base_dn, "(objectSid=*)", search_scope=SUBTREE,
+                    attributes=["sAMAccountName", "cn", "objectSid"])
+        for e in conn.response:
+            if not isinstance(e, dict) or e.get("type") != "searchResEntry":
+                continue
+            raw = (e.get("raw_attributes") or {}).get("objectSid")
+            if not raw:
+                continue
+            try:
+                from .sd import _sid
+                sid, _ = _sid(raw[0], 0)
+            except Exception:
+                continue
+            name = _first(e.get("attributes", {}).get("sAMAccountName")) or _first(e.get("attributes", {}).get("cn"))
+            if name:
+                mapping[sid] = name
+        return mapping
+
+    def object_acl(self, dn: str) -> dict:
+        from .sd import friendly_sid, parse_sd
+        with self.connection() as conn:
+            conn.search(dn, "(objectClass=*)", search_scope="BASE",
+                        attributes=["nTSecurityDescriptor", "distinguishedName", "cn"])
+            if not conn.response:
+                raise DirectoryError("Object not found")
+            raw = (conn.response[0].get("raw_attributes") or {}).get("nTSecurityDescriptor")
+            blob = raw[0] if raw else None
+            smap = self._sid_map(conn)
+        resolve = lambda sid: smap.get(sid) or friendly_sid(sid)
+        acl = parse_sd(blob, resolve)
+        acl["dn"] = dn
+        return acl
 
     # -------------------------------------------------------------- governance
     def governance(self) -> dict:

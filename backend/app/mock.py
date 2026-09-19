@@ -165,6 +165,46 @@ class MockDirectory:
                     obj["dn"] = f"{rdn},{target_dn}"
         return {"moved": dn, "to": target_dn, "new_dn": f"{rdn},{target_dn}"}
 
+    def recycle_bin(self):
+        return {
+            "total": 2,
+            "items": [
+                {
+                    "dn": f"CN=Former Employee\\0ADEL:11111111-2222-3333-4444-555555555555,CN=Deleted Objects,{settings.base_dn}",
+                    "name": "Former Employee", "sam": "femployee",
+                    "whenChanged": "2026-08-01T10:00:00+00:00",
+                    "lastKnownParent": f"OU=People,{settings.base_dn}", "recycled": False,
+                },
+                {
+                    "dn": f"CN=Old Contractor\\0ADEL:66666666-7777-8888-9999-000000000000,CN=Deleted Objects,{settings.base_dn}",
+                    "name": "Old Contractor", "sam": "ocontractor",
+                    "whenChanged": "2026-07-15T09:30:00+00:00",
+                    "lastKnownParent": f"OU=Contractors,{settings.base_dn}", "recycled": True,
+                },
+            ],
+        }
+
+    def restore_object(self, dn):
+        return {"restored": dn, "to": f"CN=Restored,OU=People,{settings.base_dn}"}
+
+    def object_acl(self, dn):
+        return {
+            "available": True,
+            "dn": dn,
+            "owner": "Domain Admins",
+            "group": "Domain Users",
+            "dacl_present": True,
+            "aces": [
+                {"type": "Allow", "flags": ["inherited"], "mask": 0x000f01ff,
+                 "rights": ["Create Child / Self", "Delete Child", "List Children", "Self / Validated Write",
+                            "Read Property", "Write Property", "Delete", "Read Control"],
+                 "sid": "S-1-5-21-0000000000", "principal": "Authenticated Users"},
+                {"type": "Allow", "flags": [], "mask": 0x000f01ff,
+                 "rights": ["Create Child / Self", "Delete Child", "List Children", "Read Property"],
+                 "sid": "S-1-5-21-1111111111", "principal": "Tier0-Admins"},
+            ],
+        }
+
     def governance(self):
         return _governance(self.list_users(size=10000)["items"], self.list_groups(size=10000)["items"])
 

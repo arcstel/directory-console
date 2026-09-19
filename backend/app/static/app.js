@@ -64,6 +64,7 @@
     groups: ["Groups", "Security and distribution groups and their membership."],
     ous: ["Organizational Units", "Structure your directory and delegate administration."],
     computers: ["Computers", "Domain-joined computer accounts."],
+    recycle: ["Recycle Bin", "Deleted objects that can be restored."],
     governance: ["Governance", "Identity risks, stale access, and privileged accounts."]
   };
 
@@ -75,6 +76,7 @@
     $("viewTitle").textContent = TITLES[view][0];
     $("viewSub").textContent = TITLES[view][1];
     $("viewActions").innerHTML = "";
+    try { window.history.replaceState(null, "", "#" + view); } catch (e) { window.location.hash = view; }
     render();
   }
 
@@ -82,6 +84,7 @@
     var v = $("view");
     if (state.view === "dashboard") return renderDashboard(v);
     if (state.view === "governance") return renderGovernance(v);
+    if (state.view === "recycle") return renderRecycle(v);
     return renderList(v, state.view);
   }
 
@@ -123,8 +126,17 @@
       computers: { path: "/computers", cols: ["Computer", "OS", "DNS name", "Status", "Last logon"], create: null }
     }[view];
 
-    $("viewActions").innerHTML = cfg.create ? '<button class="btn btn-primary btn-sm" id="createBtn">+ ' + cfg.create + "</button>" : "";
+    var actions = "";
+    if (cfg.create) actions += '<button class="btn btn-primary btn-sm" id="createBtn">+ ' + cfg.create + "</button>";
+    if (view === "users" || view === "groups") {
+      actions += '<button class="btn btn-sm" data-export="' + view + '">Export CSV</button>';
+    }
+    if (view === "users") actions += '<button class="btn btn-sm" id="importBtn">Import CSV</button>';
+    $("viewActions").innerHTML = actions;
     if (cfg.create) $("createBtn").onclick = function () { openCreate(view); };
+    if ($("importBtn")) $("importBtn").onclick = importUsersModal;
+    var exportBtn = document.querySelector("[data-export]");
+    if (exportBtn) exportBtn.onclick = function () { exportCsv(this.dataset.export); };
 
     root.innerHTML =
       '<div class="toolbar"><input id="search" type="text" placeholder="Search ' + view + '…" value="' + esc(state.q) + '" /></div>' +
@@ -221,6 +233,76 @@
     }
   }
 
+  /* ------------------------------------------------------------ recycle bin */
+  async function renderRecycle(root) {
+    root.innerHTML = '<div class="spinner">Loading deleted objects…</div>';
+    try {
+      var d = await api("/recycle");
+      if (!d.items.length) { root.innerHTML = '<div class="empty">Recycle bin is empty.</div>'; return; }
+      var html = '<div class="tablewrap"><table><thead><tr><th>Object</th><th>Original location</th><th>When deleted</th><th></th></tr></thead><tbody>';
+      d.items.forEach(function (o) {
+        html += "<tr><td><div class='name'>" + esc(o.name || o.sam) + "</div><div class='sub mono'>" + esc(o.sam || "") + "</div></td>" +
+          "<td class='mono'>" + esc(o.lastKnownParent || "—") + (o.recycled ? " <span class='badge off'>recycled</span>" : "") + "</td>" +
+          "<td class='mono'>" + esc(String(o.whenChanged || "").slice(0, 16).replace("T", " ")) + "</td>" +
+          "<td><button class='btn btn-sm' data-restore='" + esc(o.dn) + "'>Restore</button></td></tr>";
+      });
+      html += "</tbody></table></div>";
+      root.innerHTML = html;
+      root.querySelectorAll("[data-restore]").forEach(function (b) {
+        b.onclick = function (ev) { ev.stopPropagation(); restoreObject(this.dataset.restore); };
+      });
+    } catch (e) {
+      root.innerHTML = '<div class="empty">Failed to load: ' + esc(e.message) + "</div>";
+    }
+  }
+
+  async function restoreObject(dn) {
+    if (!window.confirm("Restore this object to its original location?")) return;
+    try {
+      var r = await api("/actions/restore", { method: "POST", body: JSON.stringify({ dn: dn }) });
+      toast("Restored to " + (r.to || "original location"), "ok");
+      render();
+    } catch (e) { toast(e.message, "err"); }
+  }
+
+  async function exportCsv(kind) {
+    try {
+      var res = await fetch("/api/export/" + kind);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var blob = await res.blob();
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "janus-" + kind + ".csv";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      toast("Exported " + kind + ".csv", "ok");
+    } catch (e) { toast("Export failed: " + e.message, "err"); }
+  }
+
+  /* -------------------------------------------------------------- CSV import */
+  function importUsersModal() {
+    openModal("Import users from CSV",
+      "<p class='muted'>Columns: <span class='mono'>sam, givenName, surname, password, mail, title, department, ou</span>. Export first to get a template.</p>" +
+      "<div class='form'><div class='full'><label>CSV file</label><input type='file' id='csvFile' accept='.csv,text/csv' /></div></div>" +
+      "<div id='importResult' class='mono' style='font-size:12px;margin-top:10px'></div>",
+      [{ label: "Cancel", cls: "" }, { label: "Import", cls: "btn-primary", onClick: doImportUsers }]);
+  }
+
+  async function doImportUsers() {
+    var f = $("csvFile");
+    if (!f || !f.files.length) return toast("Choose a CSV file first", "err");
+    var text = await f.files[0].text();
+    try {
+      var r = await api("/import/users", { method: "POST", body: JSON.stringify({ csv: text }) });
+      var bad = r.results.filter(function (x) { return !x.ok; });
+      $("importResult").innerHTML = r.created + " created, " + bad.length + " failed." +
+        (bad.length ? "<ul style='margin:6px 0 0;padding-left:16px'>" + bad.map(function (b) { return "<li>" + esc(b.sam) + ": " + esc(b.error) + "</li>"; }).join("") + "</ul>" : "");
+      toast(r.created + " user(s) imported", "ok");
+      state.caches.users = null;
+      setTimeout(render, 1600);
+    } catch (e) { toast(e.message, "err"); }
+  }
+
   function findingRow(f) {
     var r = el('<div class="finding ' + f.severity + '">' +
       '<span class="badge ' + f.severity + '">' + esc(f.severity) + "</span>" +
@@ -303,10 +385,35 @@
       });
     }
 
+    html += "<div id='aclBox' class='section-label'>Access (ACL) — loading…</div>";
     d.innerHTML = html;
     bindClose();
     d.querySelectorAll("[data-member]").forEach(function (c) { c.onclick = function () { openObject(this.dataset.member); }; });
     d.querySelectorAll("[data-act]").forEach(function (b) { b.onclick = function () { doAction(this.dataset.act, o); }; });
+    loadAcl(o.dn);
+  }
+
+  async function loadAcl(dn) {
+    var box = $("aclBox");
+    if (!box) return;
+    try {
+      var acl = await api("/object/acl?dn=" + encodeURIComponent(dn));
+      if (!acl.available) { box.textContent = "Access (ACL): not available for this object."; return; }
+      var html = "<div class='section-label'>Access (ACL)</div>";
+      html += "<div class='mono' style='font-size:12px;color:var(--muted);margin-bottom:8px'>Owner: " +
+        esc(acl.owner || "—") + " · Group: " + esc(acl.group || "—") + "</div>";
+      (acl.aces || []).forEach(function (a) {
+        var deny = a.type.indexOf("Deny") === 0;
+        html += "<div class='mini-item' style='align-items:flex-start'><div>" +
+          "<b>" + esc(a.principal) + "</b> <span class='badge " + (deny ? "priv" : "") + "'>" + esc(a.type) + "</span>" +
+          "<div class='t' style='font-family:var(--mono);font-size:11px;margin-top:2px'>" + esc(a.rights.join(", ")) +
+          (a.flags && a.flags.length ? " · " + esc(a.flags.join(", ")) : "") + "</div></div></div>";
+      });
+      if (!acl.aces || !acl.aces.length) html += "<div class='muted' style='font-size:12px'>No DACL entries.</div>";
+      box.outerHTML = html;
+    } catch (e) {
+      box.textContent = "Access (ACL): " + e.message;
+    }
   }
 
   function bindClose() {
@@ -516,7 +623,12 @@
       .then(function (s) { if (s && s.appliance && !s.provisioned) window.location.replace("setup.html"); })
       .catch(function () {});
     loadMeta();
-    setView("dashboard");
+    var initial = (window.location.hash || "").replace("#", "");
+    setView(TITLES[initial] ? initial : "dashboard");
+    window.addEventListener("hashchange", function () {
+      var v = (window.location.hash || "").replace("#", "");
+      if (TITLES[v] && state.view !== v) setView(v);
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

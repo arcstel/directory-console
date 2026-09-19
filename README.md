@@ -33,6 +33,12 @@ Two ways to run it: the Docker stack (**Tier 1**) and the bootable Arch applianc
 - **Organizational Units** — list and create.
 - **Computers** — inventory.
 - **Governance** — risk findings with severity, click-through to the object.
+- **Recycle Bin** — list deleted objects with their original location. (Restoring
+  deleted objects over LDAP is a Samba AD DC limitation; the console reports this
+  clearly instead of failing silently.)
+- **Access (ACL)** — read-only DACL viewer on any object: parsed owner, group, and
+  ACEs with resolved principals and decoded rights.
+- **CSV import/export** — export users/groups; bulk-create users from CSV.
 - All writes go over LDAPS; passwords use the AD `unicodePwd` convention.
 
 ## Architecture

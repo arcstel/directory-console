@@ -1,4 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query
+import csv
+import io
+
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
 from ..appliance import provision as appliance_provision
@@ -70,6 +73,14 @@ class DeleteBody(BaseModel):
     dn: str
 
 
+class CsvImport(BaseModel):
+    csv: str
+
+
+class RestoreBody(BaseModel):
+    dn: str
+
+
 class ProvisionBody(BaseModel):
     domain: str = "EXAMPLE"
     realm: str = "EXAMPLE.LOCAL"
@@ -120,6 +131,80 @@ def object_detail(dn: str):
 @router.get("/governance")
 def governance():
     return _call(_dir().governance)
+
+
+# -------------------------------------------------------- import / export
+def _csv_response(rows: list[dict], fields: list[str], filename: str) -> Response:
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    for r in rows:
+        writer.writerow({k: (";".join(v) if isinstance(v, list) else v) for k, v in r.items()})
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/export/users")
+def export_users():
+    items = _call(_dir().list_users, q="", page=1, size=100000)["items"]
+    fields = ["sam", "name", "mail", "title", "department", "enabled", "passwordNeverExpires", "lastLogonDays", "memberOf"]
+    return _csv_response(items, fields, "janus-users.csv")
+
+
+@router.get("/export/groups")
+def export_groups():
+    items = _call(_dir().list_groups, q="", page=1, size=100000)["items"]
+    fields = ["sam", "name", "description", "memberCount", "privileged"]
+    return _csv_response(items, fields, "janus-groups.csv")
+
+
+@router.post("/import/users")
+def import_users(body: CsvImport):
+    reader = csv.DictReader(io.StringIO(body.csv))
+    directory = _dir()
+    results = []
+    created = 0
+    for row in reader:
+        sam = (row.get("sam") or row.get("sAMAccountName") or "").strip()
+        if not sam:
+            results.append({"sam": "", "ok": False, "error": "missing sam"})
+            continue
+        payload = {
+            "sam": sam,
+            "givenName": row.get("givenName", ""),
+            "surname": row.get("surname", ""),
+            "password": row.get("password") or None,
+            "mail": row.get("mail", ""),
+            "title": row.get("title", ""),
+            "department": row.get("department", ""),
+            "ou": row.get("ou") or None,
+        }
+        try:
+            directory.create_user(payload)
+            created += 1
+            results.append({"sam": sam, "ok": True})
+        except Exception as exc:
+            results.append({"sam": sam, "ok": False, "error": str(exc)})
+    return {"created": created, "total": len(results), "results": results}
+
+
+# ---------------------------------------------------------------- recycle bin
+@router.get("/recycle")
+def recycle():
+    return _call(_dir().recycle_bin)
+
+
+@router.post("/actions/restore")
+def restore(body: RestoreBody):
+    return _call(_dir().restore_object, body.dn)
+
+
+@router.get("/object/acl")
+def object_acl(dn: str):
+    return _call(_dir().object_acl, dn)
 
 
 # ----------------------------------------------------- appliance provisioning
