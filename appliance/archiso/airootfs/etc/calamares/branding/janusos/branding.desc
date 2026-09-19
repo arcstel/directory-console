@@ -1,0 +1,19 @@
+---
+componentName: janusos
+strings:
+  productName: JanusOS
+  shortProductName: JanusOS
+  version: 0.1.0
+  shortVersion: "0.1.0"
+  bootloaderEntryName: JanusOS
+  productUrl: https://github.com/arcstel/janusos
+  supportUrl: https://github.com/arcstel/janusos/issues
+images:
+  productLogo: ""
+  productIcon: ""
+  productWallpaper: ""
+  logo: ""
+style:
+  sidebarBackground: "#0b0f1a"
+  sidebarText: "#e8eef8"
+  sidebarTextSelect: "#38bdf8"

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Launch the graphical installer (Calamares) in a Wayland kiosk session.
+set -euo pipefail
+
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/0}"
+# Prefer software rendering: works on VMs without GPU passthrough.
+export WLR_RENDERER="${WLR_RENDERER:-pixman}"
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+export LIBGL_ALWAYS_SOFTWARE=1
+
+# Mirror compositor/installer output to the serial console so failures are visible.
+exec > >(tee /dev/ttyS0 2>/dev/null || cat) 2>&1
+
+exec /usr/bin/cage -- /usr/bin/calamares

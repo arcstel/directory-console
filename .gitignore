@@ -9,3 +9,9 @@ appliance/out/
 appliance/work/
 appliance/archiso/airootfs/opt/janusos/app/
 appliance/archiso/airootfs/opt/janusos/requirements.txt
+appliance/localrepo/*.pkg.tar.zst
+appliance/localrepo/*.db
+appliance/localrepo/*.db.tar.gz
+appliance/localrepo/*.files
+appliance/localrepo/*.files.tar.gz
+appliance/archiso/pacman.conf.orig

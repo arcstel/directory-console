@@ -82,6 +82,25 @@ reboot, and the domain plus its 17 seeded identities persist with the console
 reconnecting over LDAPS. (Note: shut the VM down cleanly before testing — Samba's
 `sam.ldb` is a database, and a hard reset right after provisioning can lose it.)
 
+## Graphical installer (Calamares)
+
+Calamares is **AUR-only** (not in the official repos or chaotic-aur), so build it
+once into the local repo, then build the ISO:
+
+```bash
+./build-calamares.sh     # builds the AUR package in a throwaway Arch container
+sudo ./build.sh          # picks it up from appliance/localrepo/
+```
+
+Boot with `janus.installer=1` and the kiosk session launches Calamares; it drives
+the tested `janus-install` via a small custom Python job (`janusinstall`). Boot
+normally and use `janus-install` directly.
+
+> **Validation status:** the Calamares UI could not be rendered in this headless
+> QEMU sandbox — a Wayland compositor needs DRM scanout and a logind seat, which
+> the test environment doesn't provide. Verify it in a graphical VM or on bare
+> metal. The scripted `janus-install` path is fully tested.
+
 ## Configure before building
 
 Edit `archiso/airootfs/etc/janus/janus.conf`:

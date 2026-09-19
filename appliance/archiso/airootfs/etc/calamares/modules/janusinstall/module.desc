@@ -1,0 +1,5 @@
+---
+type: job
+name: janusinstall
+interface: python
+required: false

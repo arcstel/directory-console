@@ -27,7 +27,8 @@ cat <<EOF
    Local         : http://localhost:8000
 
    Config        : ${CONF}
-   Install       : janus-install   (persist JanusOS to a disk)
+   Install       : janus-install          (persist JanusOS to a disk)
+   GUI install   : boot with janus.installer=1
    Logs          : journalctl -u janus-console -u samba-ad-dc -f
 
 EOF

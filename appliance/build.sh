@@ -28,6 +28,17 @@ if [ "${#missing[@]}" -gt 0 ]; then
   exit 1
 fi
 
+echo "==> Preparing the local package repo (calamares, etc.)"
+if ls "$HERE"/localrepo/*.pkg.tar.zst >/dev/null 2>&1; then
+  ( cd "$HERE/localrepo" && repo-add -q janus-local.db.tar.gz ./*.pkg.tar.zst )
+else
+  echo "    note: no local packages found; run build-calamares.sh for the GUI installer"
+fi
+PACMAN_CONF="$PROFILE/pacman.conf"
+cp "$PACMAN_CONF" "$PACMAN_CONF.orig"
+trap 'mv -f "$PACMAN_CONF.orig" "$PACMAN_CONF" 2>/dev/null || true' EXIT
+sed "s#@LOCALREPO@#$HERE/localrepo#" "$PACMAN_CONF.orig" > "$PACMAN_CONF"
+
 echo "==> Staging console backend into the profile"
 rm -rf "$PROFILE/airootfs/opt/janusos/app"
 mkdir -p "$PROFILE/airootfs/opt/janusos"

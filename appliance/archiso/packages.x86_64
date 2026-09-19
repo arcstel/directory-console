@@ -29,6 +29,7 @@ zstd
 
 # optional graphical kiosk (enable janus-kiosk.service to use)
 cage
+calamares
 chromium
 mesa
 
